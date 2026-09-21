@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control Panel Moderator - Papan Live</title>
+<style>
+  :root{
+    --bg: #0f1712;
+    --card: #16221b;
+    --card-2: #1c2b22;
+    --board-green: #2c6b52;
+    --ink: #f2f2ea;
+    --muted: #8fa397;
+    --accent: #ffd166;
+    --danger: #e5484d;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 18px;
+    max-width: 640px;
+    margin: 0 auto;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1{
+    font-size: 19px;
+    color: var(--accent);
+    margin-bottom: 14px;
+    text-align: center;
+    font-weight: 700;
+  }
+  .card{
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .label{ font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+
+  /* Status papan semasa */
+  .board-preview{
+    background: var(--board-green);
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 15px;
+    min-height: 20px;
+    color: #fff;
+  }
+
+  textarea{
+    width: 100%;
+    height: 120px;
+    font-size: 17px;
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.1);
+    background: var(--card-2);
+    color: var(--ink);
+    resize: vertical;
+  }
+  .counter{ font-size: 12px; color: var(--muted); text-align:right; margin-top:6px; }
+  .counter.warn{ color: var(--danger); }
+
+  .btn-row{ display:flex; gap:10px; margin-top: 12px; }
+  button{
+    border:none; border-radius: 10px; cursor:pointer;
+    font-weight:700; font-size:15px;
+  }
+  .btn-main{ padding: 16px; }
+  .btn-send{ background: var(--accent); color: #17240f; flex:2; }
+  .btn-clear{ background: rgba(229,72,77,.15); color: var(--danger); flex:1; border:1px solid rgba(229,72,77,.35); }
+
+  .quick-item{
+    background: var(--card-2);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display:flex; align-items:center; gap:8px;
+    margin-bottom: 8px;
+  }
+  .quick-text{ flex:1; font-size: 14px; color: #ddd; }
+  .btn-sm{ padding: 8px 10px; font-size:12px; border-radius:7px; }
+  .btn-use{ background:#2c6b52; color:#fff; }
+  .btn-del{ background: rgba(229,72,77,.15); color: var(--danger); }
+
+  .add-quick{ display:flex; gap:8px; margin-top: 8px; }
+  .add-quick input{
+    flex:1; padding: 10px 12px; border-radius: 8px;
+    border:1px solid rgba(255,255,255,.1); background: var(--card-2); color:#fff;
+  }
+
+  .gate{
+    position: fixed; inset:0; background: var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:14px; padding: 20px; z-index: 50;
+  }
+  .gate input{
+    padding: 14px; border-radius:10px; border:1px solid rgba(255,255,255,.15);
+    background: var(--card-2); color:#fff; font-size:16px; width: 220px; text-align:center;
+  }
+  .status{ text-align:center; font-size:12px; color: var(--muted); margin-top:6px; }
+</style>
+</head>
+<body>
+
+  <div id="gate" class="gate">
+    <div style="font-size:17px; color:var(--accent); font-weight:700;">🔒 Kunci Akses Moderator</div>
+    <input id="gateInput" type="password" placeholder="Masukkan kunci">
+    <button class="btn-sm btn-use" style="padding:12px 22px;" onclick="checkGate()">Masuk</button>
+    <div id="gateMsg" style="color:var(--danger); font-size:13px;"></div>
+  </div>
+
+  <div id="app" style="display:none;">
+    <h1>🎛️ CONTROL PANEL MODERATOR</h1>
+
+    <div class="card">
+      <div class="label">📺 Sedang dipaparkan di papan</div>
+      <div id="boardPreview" class="board-preview">Menunggu mesej...</div>
+    </div>
+
+    <div class="card">
+      <div class="label">💬 Taip balasan (tak akan keluar di papan sehingga tekan Hantar)</div>
+      <textarea id="msgInput" placeholder="Taip mesej untuk komen tiktok live di sini..."></textarea>
+      <div id="counter" class="counter">0 / 50 patah perkataan</div>
+      <div class="btn-row">
+        <button class="btn-main btn-send" onclick="hantarKePapan()">🚀 HANTAR KE PAPAN</button>
+        <button class="btn-main btn-clear" onclick="padamPapan()">🗑️ PADAM</button>
+      </div>
+      <div id="statusMsg" class="status">Sedia</div>
+    </div>
+
+    <div class="card">
+      <div class="label">⚡ Quick Reply</div>
+      <div id="quickList"></div>
+      <div class="add-quick">
+        <input id="newQuickInput" type="text" placeholder="Tambah ayat quick reply baru...">
+        <button class="btn-sm btn-use" onclick="tambahQuickReply()">➕</button>
+      </div>
+    </div>
+  </div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+  // ====== TUKAR KUNCI INI (elak orang luar guna control panel awak) ======
+  const ACCESS_KEY = "atomtelur2026";
+  
+  // ====== CONFIG FIREBASE PROJEK TIKTOK LIVE CHAT BOARD ======
+  const firebaseConfig = {
+    apiKey: "AIzaSyD7hGWY3xSI2dvmhKPP6-tKQKyp8qTsMfo",
+    authDomain: "tiktok-live-chat-board.firebaseapp.com",
+    databaseURL: "https://tiktok-live-chat-board-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "tiktok-live-chat-board",
+    storageBucket: "tiktok-live-chat-board.firebasestorage.app",
+    messagingSenderId: "908776822380",
+    appId: "1:908776822380:web:cf566103bd7b832ff56a49"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  // ============================================================================
+
+  // --- Kunci akses (ringkas, simpan dalam peranti selepas betul) ---
+  if (localStorage.getItem('moderator_gate_ok') === 'true') {
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  }
+  function checkGate(){
+    const val = document.getElementById('gateInput').value;
+    if (val === ACCESS_KEY) {
+      localStorage.setItem('moderator_gate_ok', 'true');
+      document.getElementById('gate').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+    } else {
+      document.getElementById('gateMsg').textContent = 'Kunci salah, cuba lagi.';
+    }
+  }
+
+  // --- Quick replies (per-peranti, simpan lokal) ---
+  let defaultQuick = [
+    "💰 Harga Promosi Live harini sangat berbaloi! Tekan beg kuning.",
+    "📦 Penghantaran pantas dibuat dalam masa 24-48 jam!",
+    "🙏 Terima kasih kerana terus menyokong Live kami!"
+  ];
+  let customQuick = JSON.parse(localStorage.getItem('tiktok_quick_replies')) || defaultQuick;
+
+  function renderQuickReplies(){
+    const container = document.getElementById('quickList');
+    container.innerHTML = '';
+    customQuick.forEach((item, index) => {
+      const div = document.createElement('div');
+      div.className = 'quick-item';
+      const textSpan = document.createElement('div');
+      textSpan.className = 'quick-text';
+      textSpan.textContent = item;
+      const useBtn = document.createElement('button');
+      useBtn.className = 'btn-sm btn-use';
+      useBtn.textContent = '🚀 Hantar';
+      useBtn.onclick = () => hantarKePapan(item);
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-sm btn-del';
+      delBtn.textContent = '✕';
+      delBtn.onclick = () => padamQuick(index);
+      div.appendChild(textSpan);
+      div.appendChild(useBtn);
+      div.appendChild(delBtn);
+      container.appendChild(div);
+    });
+  }
+  function tambahQuickReply(){
+    const input = document.getElementById('newQuickInput');
+    const val = input.value.trim();
+    if (!val) return;
+    customQuick.push(val);
+    localStorage.setItem('tiktok_quick_replies', JSON.stringify(customQuick));
+    input.value = '';
+    renderQuickReplies();
+  }
+  function padamQuick(index){
+    customQuick.splice(index, 1);
+    localStorage.setItem('tiktok_quick_replies', JSON.stringify(customQuick));
+    renderQuickReplies();
+  }
+
+  // --- Pengira perkataan ---
+  const msgInput = document.getElementById('msgInput');
+  const counterEl = document.getElementById('counter');
+  msgInput.addEventListener('input', () => {
+    const words = msgInput.value.trim().split(/\s+/).filter(Boolean).length;
+    counterEl.textContent = `${words} / 50 patah perkataan`;
+    counterEl.classList.toggle('warn', words > 50);
+  });
+
+  // --- Hantar & padam ke papan (Firebase) ---
+  function hantarKePapan(textToSend){
+    const text = textToSend !== undefined ? textToSend : msgInput.value.trim();
+    if (!text) return;
+    db.ref('papan_live/mesej').set({ text: text, ts: Date.now() })
+      .then(() => showStatus('✅ Dihantar ke papan pada ' + new Date().toLocaleTimeString()))
+      .catch(err => showStatus('❌ Gagal hantar: ' + err.message));
+  }
+  function padamPapan(){
+    db.ref('papan_live/mesej').set({ text: '', ts: Date.now() })
+      .then(() => { msgInput.value = ''; showStatus('🧹 Papan dipadam!'); });
+  }
+  function showStatus(text){
+    document.getElementById('statusMsg').textContent = text;
+  }
+
+  // --- Papar status papan semasa (live) ---
+  db.ref('papan_live/mesej').on('value', (snap) => {
+    const data = snap.val();
+    const preview = document.getElementById('boardPreview');
+    preview.textContent = (data && data.text && data.text.trim() !== '') ? data.text : 'Menunggu mesej...';
+  });
+
+  renderQuickReplies();
+</script>
+</body>
+</html>
