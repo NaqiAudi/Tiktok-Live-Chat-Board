@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Papan Live - Balasan Moderator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board: #1f4b3c;
+    --board-light: #2c6b52;
+    --frame-dark: #2e1d14;
+    --frame: #5c4030;
+    --frame-light: #7a5940;
+    --ink: #fdfdf5;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:#000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    font-family:"Permanent Marker", cursive;
+  }
+  .frame{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    padding: 3.2vh 3.2vw;
+    background: linear-gradient(160deg, var(--frame-light), var(--frame) 40%, var(--frame-dark));
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,.25);
+  }
+  .board{
+    position:relative;
+    width:100%;
+    height:100%;
+    border-radius: 6px;
+    background:
+      radial-gradient(120% 90% at 30% 15%, var(--board-light), transparent 60%),
+      var(--board);
+    box-shadow: inset 0 0 10px 6px rgba(0,0,0,.35), inset 0 0 60px rgba(0,0,0,.25);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 6% 8%;
+    overflow:hidden;
+  }
+  .msg{
+    color: var(--ink);
+    text-align:center;
+    line-height:1.25;
+    font-size: 64px;
+    text-shadow: 0 0 2px rgba(255,255,255,.15), 2px 2px 0 rgba(0,0,0,.15);
+    opacity:0;
+    transform: scale(.94);
+    transition: opacity .45s ease, transform .45s ease;
+    max-width: 100%;
+    word-wrap: break-word;
+  }
+  .msg.show{ opacity:1; transform: scale(1); }
+  .idle{ color: rgba(253,253,245,.35); font-size: 32px; }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="board">
+      <div id="msg" class="msg idle show">Menunggu mesej moderator…</div>
+    </div>
+  </div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+  // ====== CONFIG FIREBASE ======
+  const firebaseConfig = {
+    apiKey: "AIzaSyD7hGWY3xSI2dvmhKPP6-tKQKyp8qTsMfo",
+    authDomain: "tiktok-live-chat-board.firebaseapp.com",
+    databaseURL: "https://tiktok-live-chat-board-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "tiktok-live-chat-board",
+    storageBucket: "tiktok-live-chat-board.firebasestorage.app",
+    messagingSenderId: "908776822380",
+    appId: "1:908776822380:web:cf566103bd7b832ff56a49"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  // =============================
+
+  const msgEl = document.getElementById('msg');
+  const MIN_SIZE = 22, MAX_SIZE = 72;
+
+  function fitText(text){
+    msgEl.classList.remove('idle');
+    msgEl.style.fontSize = MAX_SIZE + 'px';
+    msgEl.textContent = text;
+    const board = msgEl.parentElement;
+    let size = MAX_SIZE;
+    while(size > MIN_SIZE && (msgEl.scrollHeight > board.clientHeight || msgEl.scrollWidth > board.clientWidth)){
+      size -= 2;
+      msgEl.style.fontSize = size + 'px';
+    }
+  }
+
+  db.ref('papan_live/mesej').on('value', (snap) => {
+    const data = snap.val();
+    msgEl.classList.remove('show');
+    setTimeout(() => {
+      if(data && data.text && data.text.trim() !== ''){
+        fitText(data.text.trim());
+      } else {
+        msgEl.classList.add('idle');
+        msgEl.style.fontSize = '32px';
+        msgEl.textContent = 'Menunggu mesej moderator…';
+      }
+      requestAnimationFrame(() => msgEl.classList.add('show'));
+    }, 250);
+  });
+</script>
+</body>
+</html>
