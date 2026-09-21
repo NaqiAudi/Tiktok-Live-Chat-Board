@@ -178,13 +178,26 @@
     }
   }
 
-  // --- Quick replies (per-peranti, simpan lokal) ---
+ // --- Quick replies (Disimpan & Di-sync terus ke Firebase Cloud) ---
   let defaultQuick = [
     "💰 Harga Promosi Live harini sangat berbaloi! Tekan beg kuning.",
     "📦 Penghantaran pantas dibuat dalam masa 24-48 jam!",
     "🙏 Terima kasih kerana terus menyokong Live kami!"
   ];
-  let customQuick = JSON.parse(localStorage.getItem('tiktok_quick_replies')) || defaultQuick;
+  let customQuick = [];
+
+  // 1. Baca & dengar perubahan Quick Reply secara masa-nyata dari Firebase
+  db.ref('papan_live/quick_replies').on('value', (snap) => {
+    const data = snap.val();
+    if (data && Array.isArray(data)) {
+      customQuick = data;
+    } else {
+      // Jika data di cloud masih kosong, setkan senarai default
+      customQuick = defaultQuick;
+      db.ref('papan_live/quick_replies').set(defaultQuick);
+    }
+    renderQuickReplies();
+  });
 
   function renderQuickReplies(){
     const container = document.getElementById('quickList');
@@ -209,19 +222,21 @@
       container.appendChild(div);
     });
   }
+
+  // 2. Tambah Quick Reply baharu ke Firebase Cloud
   function tambahQuickReply(){
     const input = document.getElementById('newQuickInput');
     const val = input.value.trim();
     if (!val) return;
     customQuick.push(val);
-    localStorage.setItem('tiktok_quick_replies', JSON.stringify(customQuick));
+    db.ref('papan_live/quick_replies').set(customQuick);
     input.value = '';
-    renderQuickReplies();
   }
+
+  // 3. Padam Quick Reply dari Firebase Cloud
   function padamQuick(index){
     customQuick.splice(index, 1);
-    localStorage.setItem('tiktok_quick_replies', JSON.stringify(customQuick));
-    renderQuickReplies();
+    db.ref('papan_live/quick_replies').set(customQuick);
   }
 
   // --- Pengira perkataan ---
