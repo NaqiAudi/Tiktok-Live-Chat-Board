@@ -89,14 +89,29 @@
   const db = firebase.database();
   // ============================================================
 
-  // 🔔 BUNYI NOTIFIKASI (Guna fail bell.mp3 yang di-upload ke GitHub)
-  const tingSound = new Audio('mixkit-uplifting-bells-notification-938.wav');
+  // 🔔 1. LALUAN FAIL AUDIO (Sama seperti nama fail di GitHub)
+  const tingSound = new Audio('./mixkit-uplifting-bells-notification-938.wav');
+  
+  // 🔓 2. BUKA KUNCI AUTOPLAY (Main & pause sekejap bila skrin diklik)
+  let audioUnlocked = false;
+  function unlockAudio() {
+    if (!audioUnlocked) {
+      tingSound.play().then(() => {
+        tingSound.pause();
+        tingSound.currentTime = 0;
+        audioUnlocked = true;
+        console.log("Audio berjaya diaktifkan!");
+      }).catch(err => console.log("Menunggu sentuhan pengguna...", err));
+    }
+  }
+  document.body.addEventListener('click', unlockAudio);
+  document.body.addEventListener('touchstart', unlockAudio);
 
   const msgEl = document.getElementById('msg');
   const MIN_SIZE = 26, MAX_SIZE = 80;
 
   let isFirstLoad = true;
-  let previousText = '';
+  let lastTimestamp = 0;
 
   function fitText(text){
     msgEl.classList.remove('idle');
@@ -113,15 +128,18 @@
   db.ref('papan_live/mesej').on('value', (snap) => {
     const data = snap.val();
     const currentText = (data && data.text) ? data.text.trim() : '';
+    const currentTs = (data && data.ts) ? data.ts : 0;
 
-    // 🔔 Mainkan bunyi hanya jika ada mesej BAHARU masuk
-    if (!isFirstLoad && currentText !== '' && currentText !== previousText) {
-      tingSound.currentTime = 0; // Ulang bunyi dari awal
-      tingSound.play().catch(err => console.log('Izin audio diperlukan pelayar:', err));
+    // 🔔 3. BUNYIKAN APABILA ADA MESEJ BAHARU (Berdasarkan Masa Hantaran / Timestamp)
+    if (!isFirstLoad && currentText !== '' && currentTs !== lastTimestamp) {
+      tingSound.currentTime = 0;
+      tingSound.play().catch(err => {
+        console.log('Pelayar menyekat audio! Sila klik skrin papan sekali.', err);
+      });
     }
 
     isFirstLoad = false;
-    previousText = currentText;
+    lastTimestamp = currentTs;
 
     msgEl.classList.remove('show');
     setTimeout(() => {
@@ -136,5 +154,3 @@
     }, 250);
   });
 </script>
-</body>
-</html>
