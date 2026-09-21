@@ -75,7 +75,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
-  // ====== CONFIG FIREBASE ======
+  // ====== CONFIG FIREBASE PROJEK TIKTOK LIVE CHAT BOARD ======
   const firebaseConfig = {
     apiKey: "AIzaSyD7hGWY3xSI2dvmhKPP6-tKQKyp8qTsMfo",
     authDomain: "tiktok-live-chat-board.firebaseapp.com",
@@ -87,10 +87,16 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
-  // =============================
+  // ============================================================
+
+  // 🔔 BUNYI NOTIFIKASI (Guna fail bell.mp3 yang di-upload ke GitHub)
+  const tingSound = new Audio('mixkit-uplifting-bells-notification-938.wav');
 
   const msgEl = document.getElementById('msg');
-  const MIN_SIZE = 22, MAX_SIZE = 72;
+  const MIN_SIZE = 26, MAX_SIZE = 80;
+
+  let isFirstLoad = true;
+  let previousText = '';
 
   function fitText(text){
     msgEl.classList.remove('idle');
@@ -106,14 +112,25 @@
 
   db.ref('papan_live/mesej').on('value', (snap) => {
     const data = snap.val();
+    const currentText = (data && data.text) ? data.text.trim() : '';
+
+    // 🔔 Mainkan bunyi hanya jika ada mesej BAHARU masuk
+    if (!isFirstLoad && currentText !== '' && currentText !== previousText) {
+      tingSound.currentTime = 0; // Ulang bunyi dari awal
+      tingSound.play().catch(err => console.log('Izin audio diperlukan pelayar:', err));
+    }
+
+    isFirstLoad = false;
+    previousText = currentText;
+
     msgEl.classList.remove('show');
     setTimeout(() => {
-      if(data && data.text && data.text.trim() !== ''){
-        fitText(data.text.trim());
+      if(currentText !== ''){
+        fitText(currentText);
       } else {
         msgEl.classList.add('idle');
-        msgEl.style.fontSize = '38px';
-        msgEl.textContent = 'Hai! Nak Tanya Apa-Apa Boleh Je..';
+        msgEl.style.fontSize = '36px';
+        msgEl.textContent = 'Menunggu mesej moderator…';
       }
       requestAnimationFrame(() => msgEl.classList.add('show'));
     }, 250);
