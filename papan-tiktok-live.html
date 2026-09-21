@@ -6,7 +6,7 @@
 <title>Papan Live - Balasan Moderator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
 <style>
   :root{
     --board: #1f4b3c;
@@ -24,7 +24,7 @@
     align-items:center;
     justify-content:center;
     overflow:hidden;
-    font-family:"Permanent Marker", cursive;
+    font-family: "Patrick Hand", cursive, sans-serif;
   }
   .frame{
     position:relative;
@@ -68,7 +68,7 @@
 <body>
   <div class="frame">
     <div class="board">
-      <div id="msg" class="msg idle show">Menunggu mesej moderator…</div>
+      <div id="msg" class="msg idle show">Hai! Nak Tanya Apa-Apa Boleh Je..</div>
     </div>
   </div>
 
@@ -113,7 +113,7 @@
       } else {
         msgEl.classList.add('idle');
         msgEl.style.fontSize = '32px';
-        msgEl.textContent = 'Menunggu mesej moderator…';
+        msgEl.textContent = 'Hai! Nak Tanya Apa-Apa Boleh Je..';
       }
       requestAnimationFrame(() => msgEl.classList.add('show'));
     }, 250);
